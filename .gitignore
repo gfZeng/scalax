@@ -1,0 +1,29 @@
+.idea
+/target
+/project/target
+/project/project
+/project/plugins.sbt
+/config/**/stats-*.csv
+/*.log
+.DS_Store
+/config/**/*.properties
+/config/**/*.json
+/.java.classpath
+/*.env
+!.env
+.bsp
+# VS Code
+.vscode/
+# Metals
+.bloop/
+.metals/
+metals.sbt
+*.pyc
+*.bases
+*.quotes
+**/.ipynb_checkpoints
+**/.cpcache
+**/.lsp
+**/package-lock.json
+*.ipr
+*.iws
