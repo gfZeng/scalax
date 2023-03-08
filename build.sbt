@@ -7,7 +7,7 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 scalacOptions ++= Seq("-language:implicitConversions", "-deprecation")
 
-lazy val root = (project in file("."))
+lazy val scalax = (project in file("."))
   .settings(
     name := "$"
   )
