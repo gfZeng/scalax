@@ -82,7 +82,7 @@ fast-deploy:
 	$(CLASSPATHS) |grep -v '^/' | tr '\n' ':' > $(DEPLOY_FILE)
 	scp $(DEPLOY_FILE)                $(DEST)/$(CLASSPATH_FILE)
 	$(CLASSPATHS) |grep '^/' | xargs dirname | xargs -I{} $(RSYNC) {} $(DEST)/target
-	$(RSYNC) deps/*/target/scala-*    $(DEST)/target
+	#$(RSYNC) deps/*/target/scala-*    $(DEST)/target
 	$(RSYNC) target/scala-*           $(DEST)/target
 
 ## for web
