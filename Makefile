@@ -72,6 +72,7 @@ ide/clean:
 deploy: HOST=$(firstword $(subst :, , $(DEST)))
 deploy: DIR=$(lastword $(subst :, , $(DEST)))
 deploy: fast-deploy
+  @test -d deps  && $(RSYNC) deps $(DEST) || test true
 	@ssh -T $(HOST) 'cd $(DIR); git pull --rebase; sbt update;'
   #rsync -av $(MAVEN_DIR)          $(HOST):.cache/coursier/v1/https/repo1.maven.org/maven2
   #eval echo `cat $(CLASSPATH_FILE)` | perl -pe 's/:/\n/g' | xargs -I{} rsync -av {} $(HOST):.cache/coursier/v1/https/repo1.maven.org/maven2
