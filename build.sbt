@@ -1,5 +1,5 @@
 version            := "0.1.0"
-scalaVersion       := "3.2.1"
+scalaVersion       := "3.2.2"
 run / fork         := true
 Test / logBuffered := false
 
