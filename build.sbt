@@ -20,6 +20,7 @@ libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 libraryDependencies += "org.apache.commons" % "commons-collections4" % "4.4"
 libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.10.0"
 
+libraryDependencies += "org.redisson" % "redisson" % "3.17.1" % "provided"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % "2.7.0",
   "com.typesafe.akka" %% "akka-stream" % "2.7.0",

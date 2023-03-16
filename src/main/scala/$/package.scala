@@ -8,7 +8,7 @@ import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
 import scala.math.BigDecimal.RoundingMode.*
-import java.time.Instant
+import java.time.{Instant, ZoneId}
 import java.util.{Base64, Timer, TimerTask}
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Mac
@@ -22,6 +22,8 @@ package object $ {
 
   final val Zero: BigDecimal = 0
   final val One: BigDecimal = 1
+  final val Ten: BigDecimal = 10
+  final val Inf: BigDecimal = 1_000_000_000L
 
   given Conversion[String, BigDecimal] with {
     override def apply(x: String): BigDecimal = BigDecimal(x)
@@ -484,5 +486,36 @@ package object $ {
     }
   }
 
+  class TimedCounter(counterWindownMs: Long) {
+    @volatile var clearMs = nowMs()
+    @volatile var counter = 0L
 
+    def lockInc(): Long = synchronized { inc() }
+
+    def inc(): Long = {
+      val nms = nowMs()
+      if (nms - clearMs > counterWindownMs) {
+        counter = 0
+        clearMs = nms
+      }
+      counter += 1
+      counter
+    }
+  }
+
+  object TimeLimited extends Memoize[Any, Long]() {
+
+    def apply(key: Any, limitedMs: Long)(fn: => Unit): Unit = {
+      val nms = nowMs()
+      if (nms - this(key) < limitedMs) return
+        this(key) = nms
+      fn
+    }
+
+  }
+
+
+
+  val systemZone = ZoneId.systemDefault()
+  val systemZoneOffset = systemZone.getRules.getOffset(Instant.now())
 }
