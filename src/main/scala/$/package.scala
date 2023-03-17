@@ -507,8 +507,8 @@ package object $ {
 
     def apply(key: Any, limitedMs: Long)(fn: => Unit): Unit = {
       val nms = nowMs()
-      if (nms - this(key) < limitedMs) return
-        this(key) = nms
+      if (nms - this(key) < limitedMs) {return}
+      this(key) = nms
       fn
     }
 
