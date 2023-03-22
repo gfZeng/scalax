@@ -27,7 +27,7 @@ SRCDIR ?= src
 MYDIR = $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 help:
-	@cat Makefile
+	@cat $(MAKEFILE_LIST)
 
 
 ## Java & Scala
@@ -72,10 +72,7 @@ ide/clean:
 deploy: HOST=$(firstword $(subst :, , $(DEST)))
 deploy: DIR=$(lastword $(subst :, , $(DEST)))
 deploy: fast-deploy
-	@test -d deps  && $(RSYNC) --exclude target --copy-links deps $(DEST) || test true
 	@ssh -T $(HOST) 'cd $(DIR); git pull --rebase; sbt update;'
-  #rsync -av $(MAVEN_DIR)          $(HOST):.cache/coursier/v1/https/repo1.maven.org/maven2
-  #eval echo `cat $(CLASSPATH_FILE)` | perl -pe 's/:/\n/g' | xargs -I{} rsync -av {} $(HOST):.cache/coursier/v1/https/repo1.maven.org/maven2
 
 fast-deploy: DEPLOY_FILE = .deploy.java.classpath
 fast-deploy: CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
@@ -83,7 +80,7 @@ fast-deploy:
 	$(CLASSPATHS) |grep -v '^/' | tr '\n' ':' > $(DEPLOY_FILE)
 	scp $(DEPLOY_FILE)                $(DEST)/$(CLASSPATH_FILE)
 	$(CLASSPATHS) |grep '^/' | xargs dirname | xargs -I{} $(RSYNC) {} $(DEST)/target
-	#$(RSYNC) deps/*/target/scala-*    $(DEST)/target
+	test -f makefile && rsync -L makefile $(DEST) || test true
 	$(RSYNC) target/scala-*           $(DEST)/target
 
 ## for web

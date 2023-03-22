@@ -13,6 +13,7 @@ import java.io.OutputStream
 import java.net.URI
 import java.nio.charset.Charset
 import io.netty.buffer.{ByteBuf, ByteBufInputStream, ByteBufOutputStream, Unpooled}
+
 import scala.jdk.FutureConverters.*
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
@@ -46,6 +47,7 @@ extension (tp: RPatternTopic) {
     tp.addListener(clazz, { (ptn, chnl, x: T) => fn(ptn, chnl, x) })
   }
 }
+
 
 extension (r: Redis) {
   def ptopic[T: ClassTag](ptn: String) = {
@@ -92,6 +94,9 @@ extension (r: Redis) {
   def scoredSortedSet[T: ClassTag](name: String) = r.getScoredSortedSet[T](name, Redis.JsonCodec[String, T]())
 
   def bucket[T: ClassTag](name: String) = r.getBucket[T](name, Redis.JsonCodec[String, T]())
+
+  def stream[V: ClassTag](name: String) = r.getStream[String, V](name, Redis.JsonCodec[String, V]())
+
 }
 
 extension (rt: RTransaction) {
