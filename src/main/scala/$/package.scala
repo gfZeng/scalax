@@ -3,12 +3,13 @@ import java.util
 import java.net.{URL, URLDecoder, URLEncoder}
 import java.lang.reflect.{Method, Modifier, Type}
 import java.security.MessageDigest
+import java.time.format.DateTimeFormatter
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
 import scala.math.BigDecimal.RoundingMode.*
-import java.time.{Instant, ZoneId}
+import java.time.{Instant, LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.{Base64, Timer, TimerTask}
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Mac
@@ -516,6 +517,44 @@ package object $ {
 
 
 
-  val systemZone = ZoneId.systemDefault()
-  val systemZoneOffset = systemZone.getRules.getOffset(Instant.now())
+  val sysZone = ZoneId.systemDefault()
+  val UTC = ZoneId.of("UTC")
+  val DateTimeISOFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+  val DateTimeISOZonedFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
+
+  extension (zone: ZoneId) {
+
+    def offset = zone.getRules.getOffset(Instant.now())
+
+    def offset(ts: Long) = zone.getRules.getOffset(Instant.ofEpochMilli(ts))
+  }
+
+
+  extension (ts: Long) {
+
+    def zoneOffset: ZoneOffset = zoneOffset(sysZone)
+
+    def zoneOffset(zone: ZoneId) = zone.offset(ts)
+
+    def localDateTime = LocalDateTime.ofEpochSecond(ts/1000, 0, sysZone.offset(ts))
+
+    inline def ldt: LocalDateTime = localDateTime
+
+    def localISO: String = localDateTime.toString
+
+    inline def liso: String = localISO
+
+
+    inline def datetime: ZonedDateTime = datetime(sysZone)
+
+    inline def isoz: String = isoz(sysZone)
+
+    inline def iso: String = iso(sysZone)
+
+    def datetime(zone: ZoneId) = ZonedDateTime.ofInstant(Instant.ofEpochMilli(ts), zone)
+
+    def isoz(zone: ZoneId): String = datetime(zone).format(DateTimeISOZonedFormatter)
+
+    def iso(zone: ZoneId): String = datetime(zone).format(DateTimeISOFormatter)
+  }
 }
