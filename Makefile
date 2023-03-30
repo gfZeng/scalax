@@ -70,10 +70,14 @@ export PYTHONPATH ?= $(shell python3 -m site --user-site)
 py/run:
 	$(PYTHON) -m $(APP)
 
+jupyter:
+	jupyter lab --no-browser
+
+
 ide/clean:
 	rm -rf target project/{target,src,project} .idea .bsp .bloop
 
-CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
+fast-deploy deploy: CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
 
 deploy: HOST=$(firstword $(subst :, , $(DEST)))
 deploy: DIR=$(lastword $(subst :, , $(DEST)))

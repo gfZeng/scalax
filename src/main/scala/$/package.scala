@@ -520,7 +520,7 @@ package object $ {
   val sysZone = ZoneId.systemDefault()
   val UTC = ZoneId.of("UTC")
   val DateTimeISOFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-  val DateTimeISOZonedFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
+  val DateTimeISOZonedFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssX")
 
   extension (zone: ZoneId) {
 
@@ -556,5 +556,16 @@ package object $ {
     def isoz(zone: ZoneId): String = datetime(zone).format(DateTimeISOZonedFormatter)
 
     def iso(zone: ZoneId): String = datetime(zone).format(DateTimeISOFormatter)
+  }
+
+  extension(date: String) {
+    def ts: Long =
+      if (date.indexOf('+', 10) > 0 || date.indexOf('-', 10) > 0)
+        ZonedDateTime.parse(date).toInstant.toEpochMilli
+      else
+        ts(sysZone)
+
+    def ts(zone: ZoneId): Long =
+      LocalDateTime.parse(date).atZone(zone).toInstant.toEpochMilli
   }
 }
