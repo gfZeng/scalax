@@ -3,6 +3,9 @@
 -include .$(env).env
 export
 
+.DEFAULT_GOAL := .default
+
+SHELL = bash
 
 SBT ?= sbt
 JAVA ?= java
@@ -97,7 +100,7 @@ fast-deploy:
 	@scp $(DEPLOY_FILE)                $(DEST)/$(CLASSPATH_FILE)
 	@$(CLASSPATHS) |grep '^/' | xargs dirname
 	@$(CLASSPATHS) |grep '^/' | xargs dirname | xargs -I{} $(RSYNC) {} $(DEST)/target
-	@test -f makefile && rsync -L makefile $(DEST) || test true
+	@test -f makefile && rsync -L makefile $(DEST) || :
 	@$(RSYNC) target/scala-*           $(DEST)/target
 
 ## for web
@@ -106,3 +109,26 @@ web/build:
 
 web/deploy:
 	rsync -avz web/cryptoMarket/dist    $(DEST)
+
+
+define serviceinfo
+[Unit]
+ConditionPathExists=$(PWD)
+
+[Service]
+WorkingDirectory=$(PWD)
+ExecStart=/usr/bin/env make ${CMD} env=%I
+ExecReload=/bin/kill -HUP \$$MAINPID
+Restart=always
+endef
+
+export serviceinfo
+service/install: DIR = .
+service/install:
+	@echo "$${serviceinfo}" > $(DIR)/$(SERVICE)@.service
+	@test "$(RESTART_SEC)" != ""  && echo  RestartSec=$(RESTART_SEC) >> $(DIR)/$(SERVICE)@.service || :
+
+.default: ACTION ?= launch
+.default:
+	@$(MAKE) $(ACTION)
+
