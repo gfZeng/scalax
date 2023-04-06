@@ -1,11 +1,23 @@
+#!/usr/bin/env bash
 
--include .env
--include .$(env).env
-export
+#\
+define(){ :; }; endef(){ :; }
+#\
+for arg in "$@"; do [[ $arg == *=* ]] && export $arg; done
+#\
+set -a; [ -f .env ] && source .env; [ -f .$env.env ] && source .$env.env; set +a;
+#\
+file $0 | grep "binary data" > /dev/null && exec java -cp $0 $APP || exec make -f $0 $@
+
+define LOAD_ENV
+set -a; [ -f .env ] && source .env; [ -f .$$env.env ] && source .$$env.env; set +a;
+endef
 
 .DEFAULT_GOAL := .default
-
 SHELL = bash
+.ONESHELL:
+.PHONY:
+
 
 SBT ?= sbt
 JAVA ?= java
@@ -23,15 +35,19 @@ LINUX_MAVEN_DIR=.cache/coursier/v1/https/repo1.maven.org/maven2
 ifeq ($(OS), Linux)
 	MAVEN_DIR ?= $(HOME)/$(LINUX_MAVEN_DIR)
   XARGS_I = I
+	REV = tac
 else
 	MAVEN_DIR ?= $(HOME)/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2
   XARGS_I = J
+	REV = tail -r
 endif
 
 CLASSPATH_FILE ?= .java.classpath
 SRCDIR ?= src
 
 MYDIR = $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+
+export
 
 help:
 	@cat $(MAKEFILE_LIST)
@@ -54,10 +70,12 @@ fast-compile:
 	@$(SBT) --client compile
 
 launch:
-	@$(JAVACMD) $$(eval 'echo "$(APP)"')
+	@$(LOAD_ENV)
+	@exec $(JAVACMD) $$APP
 
 run:
-	@$(JAVACMD) '$$.launch' $(APP)
+	@$(LOAD_ENV)
+	@exec $(JAVACMD) '$$.launch' $$APP
 
 
 #.ONESHELL:
@@ -71,7 +89,8 @@ export PYTHONPATH ?= $(shell python3 -m site --user-site)
 
 #py/run: PYTHONPATH := $(PYTHONPATH):$(MYDIR)/py
 py/run:
-	$(PYTHON) -m $(APP)
+	@$(LOAD_ENV)
+	@exec $(PYTHON) -m $$APP
 
 jupyter:
 	jupyter lab --no-browser
@@ -80,7 +99,7 @@ jupyter:
 ide/clean:
 	rm -rf target project/{target,src,project} .idea .bsp .bloop
 
-fast-deploy deploy: CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
+fast-deploy deploy jar: CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
 
 deploy: HOST=$(firstword $(subst :, , $(DEST)))
 deploy: DIR=$(lastword $(subst :, , $(DEST)))
@@ -102,6 +121,35 @@ fast-deploy:
 	@test -f makefile && rsync -L makefile $(DEST) || :
 	@$(RSYNC) target/scala-*           $(DEST)/target
 
+bin jar jar!: JARNAME ?= $(shell basename $(PWD))
+jar:
+	@test -f $(JARNAME).jar && exit 0
+	tmp=__temp__; pwd=$(PWD)
+	mkdir -p $$tmp
+	for f in `$(CLASSPATHS) | $(REV)`; do
+		case $$f in
+			*.jar)
+				echo unpack $$f to $$tmp
+				cd $$tmp && jar xf `eval echo $$f`
+				cd $$pwd
+			;;
+			*)
+				$(RSYNC) -R $$f/./ $$tmp
+		esac
+	done
+	cd $$pwd; echo packing to $(JARNAME).jar
+	jar cf $(JARNAME).jar -C $$tmp .
+	rm -rf $$tmp
+
+jar!:
+	rm $(JARNAME).jar
+	$(MAKE) -s jar
+
+bin: BINNAME ?= $(JARNAME)
+bin: jar
+	@cat $(MAKEFILE_LIST) $(JARNAME).jar > $(BINNAME)
+	chmod +x $(BINNAME)
+
 ## for web
 web/build:
 	cd web/cryptoMarket/ && pnpm i && pnpm run build
@@ -116,18 +164,30 @@ ConditionPathExists=$(PWD)
 
 [Service]
 WorkingDirectory=$(PWD)
-ExecStart=/usr/bin/env make ${CMD} env=%I
-ExecReload=/bin/kill -HUP \$$MAINPID
+Environment=CMD=launch
+EnvironmentFile=-$(PWD)/.%I.env
+ExecStart=/usr/bin/env make $$CMD env=%I
+ExecReload=/bin/kill -HUP $$MAINPID
 Restart=always
 endef
 
 export serviceinfo
-service/install: DIR = .
+service/install: DIR = ~/.config/systemd/user
+service/install: SERVICE ?= $(shell basename $(PWD))
 service/install:
+	@test $(OS) == Linux ||  { echo $(OS) not supports systemd; exit 0; }
+	@mkdir -p $(DIR)
 	@echo "$${serviceinfo}" > $(DIR)/$(SERVICE)@.service
 	@test "$(RESTART_SEC)" != ""  && echo  RestartSec=$(RESTART_SEC) >> $(DIR)/$(SERVICE)@.service || :
+	@systemctl --user daemon-reload
 
 .default: ACTION ?= launch
 .default:
-	@$(MAKE) $(ACTION)
+	@exec $(MAKE) -s $(ACTION)
 
+.%:
+	@:
+
+%:
+	@$(LOAD_ENV)
+	@exec $(MAKE) -s .$@
