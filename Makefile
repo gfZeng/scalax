@@ -85,7 +85,6 @@ fast-deploy deploy: CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
 deploy: HOST=$(firstword $(subst :, , $(DEST)))
 deploy: DIR=$(lastword $(subst :, , $(DEST)))
 deploy: fast-deploy
-	@#ssh -T $(HOST) 'cd $(DIR); git pull --rebase; sbt update;'
 	@ssh -T $(HOST) 'mkdir -p $(LINUX_MAVEN_DIR)'
 	@$(CLASSPATHS) \
 		| grep MAVEN_DIR \
