@@ -45,7 +45,6 @@ endif
 CLASSPATH_FILE ?= .java.classpath
 SRCDIR ?= src
 
-MYDIR = $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 export
 
@@ -87,7 +86,6 @@ run:
 
 export PYTHONPATH ?= $(shell python3 -m site --user-site)
 
-#py/run: PYTHONPATH := $(PYTHONPATH):$(MYDIR)/py
 py/run:
 	@$(LOAD_ENV)
 	@exec $(PYTHON) -m $$APP
