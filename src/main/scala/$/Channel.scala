@@ -104,69 +104,120 @@ abstract class PushFirstChannel[T](buf: Channel.Buffer[T] = null) extends Channe
 
 }
 
+trait LoopTask extends Runnable {
+
+
+  def thread: Thread
+
+  def done(e: Throwable): Unit
+
+  def continue: Unit
+
+  def `do`(): Unit
+
+  @volatile var active: Boolean = true
+
+  def stop() = if (active) {
+    active = false
+    thread.interrupt()
+  }
+
+  def start(cleanOnExit:Boolean=true) = {
+    if (cleanOnExit) {
+      onExit {
+        stop()
+        if(thread ne null) thread.join()
+      }
+    }
+    thread.start()
+  }
+}
+
+
+trait NormalLoopTask(virtualThread:Boolean=false) extends LoopTask {
+
+  val thread = if (virtualThread) Thread.ofVirtual().unstarted(this) else new Thread(this)
+
+  def continue: Unit = throw IllegalStateException("NormalLoopTask does not supports continue")
+
+  def run() = {
+    try {
+      while (active) {`do`()}
+      done(null)
+    } catch {
+      case _: InterruptedException => done(null)
+      case e => done(e)
+    }
+  }
+
+}
+
+trait AsyncLoopTask(virtualThread:Boolean=false) extends LoopTask {
+
+  val thread = if (virtualThread) Thread.ofVirtual().unstarted(this) else new Thread(this)
+
+
+  @volatile var waiting = false
+
+  def continue = thread.synchronized {
+    thread.notify()
+    waiting = false
+  }
+
+  def run() = {
+    try {
+      while (active) {
+        waiting = true
+        `do`()
+        if (this.waiting) thread.synchronized { if (this.waiting) thread.wait() }
+      }
+      done(null)
+    } catch {
+      case _: InterruptedException => done(null)
+      case e => done(e)
+    }
+  }
+
+}
+
+trait CallbackLoopTask extends LoopTask {
+
+  @volatile var _thread: Thread = new Thread(this)
+
+  def thread = _thread
+
+  def continue = run()
+
+  override def stop(): Unit = {
+    super.stop()
+    _thread = null
+    done(null)
+  }
+
+  def run() = {
+    try {
+      if (active) {
+        _thread = Thread.currentThread()
+        `do`()
+      }
+    } catch {
+      case _: InterruptedException =>
+      case e => done(e)
+    }
+  }
+
+}
+
+
 trait MessageHandler[T](
     val flushSize: Int  = Channel.MaxFlushSize,
-    val timeoutMs: Long = Channel.MaxTimeoutMs
-) extends Channel[T] {
-  // ok | stopping | stopped
-  type Status = 0 | 1 | 2
-
-  @volatile private var status:  Status = 0
-  @volatile private var _thread: Thread = null
-  @volatile var async = false
-
-  inline def stop() = if (status == 0) {
-    status = 1
-    _thread.interrupt()
-  }
-  inline def active = status == 0
+    val timeoutMs: Long = Channel.MaxTimeoutMs ) extends Channel[T], LoopTask {
 
   def process(msg: T): Unit = process(Seq(msg))
 
   def process(msgs: Seq[T]): Unit = msgs.foreach(process)
 
-  def done(e: Throwable): Unit = clean.done()
 
-  private object clean {
-    def apply(): Unit = {
-      synchronized {
-        status match {
-          case 0 => stop(); wait()
-          case 1 => wait()
-          case 2 =>
-        }
-      }
-    }
-    def done(): Unit = synchronized {
-      status = 2
-      notifyAll()
-    }
-  }
-
-  def continue = _thread.synchronized {
-    _thread.notify()
-    this.async = false
-  }
-
-  def start(cleanOnExit: Boolean = true, async: Boolean = false, virtualThread: Boolean=false) = {
-    def run = {
-      if (cleanOnExit) {
-        onExit(clean())
-      }
-      try {
-        while (active) {
-          val msgs = flush(flushSize, timeoutMs)
-          this.async = async
-          process(msgs)
-          if (this.async) _thread.synchronized { if (this.async) _thread.wait() }
-        }
-        done(null)
-      } catch {
-        case _: InterruptedException => done(null)
-        case e => done(e)
-      }
-    }
-    _thread = if (virtualThread) vthread(run) else thread(run)
-  }
+  inline def `do`() = process(flush(flushSize, timeoutMs))
 
 }

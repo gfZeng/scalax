@@ -143,6 +143,14 @@ package object $ {
   def vthread(cb: => Unit): Thread = Thread.startVirtualThread(() => cb)
 
 
+  extension (x:AnyRef) {
+
+    def sleep() = x.synchronized {x.wait()}
+
+    def awake() = x.synchronized {x.notify()}
+  }
+
+
 
   inline def nowMs(): Long = System.currentTimeMillis()
   inline def now() = Instant.now()
@@ -568,4 +576,5 @@ package object $ {
     def ts(zone: ZoneId): Long =
       LocalDateTime.parse(date).atZone(zone).toInstant.toEpochMilli
   }
+
 }
