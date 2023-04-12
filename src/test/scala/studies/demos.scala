@@ -268,3 +268,13 @@ object MessageHandlerDemo {
   }
 }
 
+@main def macrorun() = {
+  import loop.*
+  prn(3)
+  prn {var x = 3; x <= 9 && x >= 10; x += 1}
+
+  loop{ var x = 3; x <= 9 && x >= 10; x += 1; |>
+
+  }
+
+}
