@@ -84,7 +84,6 @@ run:
 #	timestr=`date -r "$(CLASSPATH_FILE)" +'%Y-%m-%d %H:%M:%S'`
 #	find "$(SRCDIR)" -type f -newermt  "$$timestr" | grep $(SRCDIR) > /dev/null
 
-export PYTHONPATH ?= $(shell python3 -m site --user-site)
 
 py/run:
 	@$(LOAD_ENV)
