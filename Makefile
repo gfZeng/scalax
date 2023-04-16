@@ -150,13 +150,6 @@ bin: jar
 	@cat $(MAKEFILE_LIST) $(JARNAME).jar >> $(BINNAME)
 	chmod +x $(BINNAME)
 
-## for web
-web/build:
-	cd web/cryptoMarket/ && pnpm i && pnpm run build
-
-web/deploy:
-	rsync -avz web/cryptoMarket/dist    $(DEST)
-
 
 define serviceinfo
 [Unit]
