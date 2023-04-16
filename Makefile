@@ -7,7 +7,7 @@ for arg in "$@"; do [[ $arg == *=* ]] && export $arg; done
 #\
 set -a; [ -f .env ] && source .env; [ -f .$env.env ] && source .$env.env; set +a;
 #\
-file $0 | grep "binary data" > /dev/null && exec java -cp $0 $APP || exec make -f $0 $@
+file $0 | grep "binary data" > /dev/null && exec java -server -cp $0 $APP || exec make -f $0 $@
 
 define LOAD_ENV
 set -a; [ -f .env ] && source .env; [ -f .$$env.env ] && source .$$env.env; set +a;
@@ -144,7 +144,8 @@ jar!:
 
 bin: BINNAME ?= $(JARNAME)
 bin: jar
-	@cat $(MAKEFILE_LIST) $(JARNAME).jar > $(BINNAME)
+	@printf '#!/usr/bin/env bash\nAPP=$${APP:-$(APP)}\n' > $(BINNAME)
+	@cat $(MAKEFILE_LIST) $(JARNAME).jar >> $(BINNAME)
 	chmod +x $(BINNAME)
 
 ## for web
