@@ -567,13 +567,26 @@ extension (ts: Long) {
   def iso(zone: ZoneId): String = datetime(zone).format(DateTimeISOFormatter)
 }
 
-extension(date: String) {
-  def ts: Long =
-    if (date.indexOf('+', 10) > 0 || date.indexOf('-', 10) > 0)
-      ZonedDateTime.parse(date).toInstant.toEpochMilli
-    else
-      ts(sysZone)
+extension(zdt: ZonedDateTime) {
+  def ts: Long = zdt.toInstant().toEpochMilli()
+}
 
-  def ts(zone: ZoneId): Long =
-    LocalDateTime.parse(date).atZone(zone).toInstant.toEpochMilli
+extension(ldt: LocalDateTime) {
+  def ts(zone: ZoneId): Long = ldt.atZone(zone).ts
+  def ts: Long = ts(sysZone)
+}
+
+extension(date: String) {
+
+  private def zoned = date.indexOf('+', 10) > 0 || date.indexOf('-', 10) > 0
+
+  def datetime: ZonedDateTime = if (zoned) ZonedDateTime.parse(date) else datetime(sysZone)
+
+  def datetime(zone: ZoneId): ZonedDateTime = localDateTime.atZone(zone)
+
+  def localDateTime: LocalDateTime = LocalDateTime.parse(date)
+
+  def ts: Long = if (zoned) datetime.ts else localDateTime.ts
+
+  def ts(zone: ZoneId): Long = localDateTime.ts(zone)
 }

@@ -17,6 +17,12 @@ import io.netty.buffer.{ByteBuf, ByteBufInputStream, ByteBufOutputStream, Unpool
 import scala.jdk.FutureConverters.*
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
+import org.redisson.api.RMapCache
+import org.redisson.api.map.event.EntryCreatedListener
+import org.redisson.api.map.event.EntryEvent
+import org.redisson.api.map.event.EntryUpdatedListener
+import org.redisson.api.map.event.EntryExpiredListener
+import org.redisson.api.map.event.EntryRemovedListener
 
 type Redis = RedissonClient
 
@@ -99,6 +105,31 @@ extension (r: Redis) {
 
 }
 
+extension [K, V](cache: RMapCache[K, V]) {
+  def listen(fn: EntryEvent[K, V] => Unit) = {
+    cache.addListener(new EntryCreatedListener[K, V] {
+      def onCreated(event: EntryEvent[K, V]): Unit = {
+        fn(event)
+      }
+    })
+    cache.addListener(new EntryUpdatedListener[K, V] {
+      def onUpdated(event: EntryEvent[K, V]): Unit = {
+        fn(event)
+      }
+    })
+    cache.addListener(new EntryExpiredListener[K, V] {
+      def onExpired(event: EntryEvent[K, V]): Unit = {
+        fn(event)
+      }
+    })
+    cache.addListener(new EntryRemovedListener[K, V] {
+      def onRemoved(event: EntryEvent[K, V]): Unit = {
+        fn(event)
+      }
+    })
+  }
+}
+
 extension (rt: RTransaction) {
   def map[T: ClassTag](name: String) = rt.getMap[String, T](name, Redis.JsonCodec[String, T]())
   def bucket[T: ClassTag](name: String) = rt.getBucket[T](name, Redis.JsonCodec[String, T]())
@@ -109,7 +140,7 @@ extension (topic: RTopic) {
   infix def !!(x: Any) = topic.publish(x)
 
   infix def !(x: Any) = topic.publishAsync(x).whenComplete { (x, e) =>
-    if (e != null) Log.error(e)(s"publish on ${topic.getChannelNames}")
+    if (e != null) Log.error(s"publish on ${topic.getChannelNames}", e)
   }
 
 }

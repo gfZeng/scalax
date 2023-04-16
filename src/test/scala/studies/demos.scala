@@ -268,13 +268,17 @@ object MessageHandlerDemo {
   }
 }
 
-@main def macrorun() = {
-  import loop.*
-  prn(3)
-  prn {var x = 3; x <= 9 && x >= 10; x += 1}
+object JsonDemo2 {
 
-  loop{ var x = 3; x <= 9 && x >= 10; x += 1; |>
+  case class Foo(name: String)
 
+  object Foo extends Memoize[String, Foo]  {
+    override def make(k: String): Foo = new Foo(k)
   }
 
+  def main(args: Array[String]): Unit = {
+    val f = JSON.read[Foo]("""{"name": "a"}""")
+    println(f)
+    println(Foo.values.toList)
+  }
 }
