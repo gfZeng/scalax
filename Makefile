@@ -120,12 +120,13 @@ fast-deploy:
 
 bin jar jar!: JARNAME ?= $(shell basename $(PWD))
 jar:
-	@test -f $(JARNAME).jar && exit 0
+	@test -f $(JARNAME).jar && update=true || update=false
 	tmp=__temp__; pwd=$(PWD)
 	mkdir -p $$tmp
 	for f in `$(CLASSPATHS) | $(REV)`; do
 		case $$f in
 			*.jar)
+				$$update && continue
 				echo unpack $$f to $$tmp
 				cd $$tmp && jar xf `eval echo $$f`
 				cd $$pwd
@@ -135,7 +136,8 @@ jar:
 		esac
 	done
 	cd $$pwd; echo packing to $(JARNAME).jar
-	jar cf $(JARNAME).jar -C $$tmp .
+	$$update && echo "update jar"; flag=uf || echo "create jar" || flag=cf
+	jar $$flag $(JARNAME).jar -C $$tmp .
 	rm -rf $$tmp
 
 jar!:
