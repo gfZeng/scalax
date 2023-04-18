@@ -55,7 +55,7 @@ help:
 ## Java & Scala
 clean:
 	@rm -rf $(CLASSPATH_FILE)
-	@$(SBT) clean
+	@find . -type d -name target |xargs rm -rf
 
 compile:
 	@$(SBT) 'fgRunMain $$.classpath $(CLASSPATH_FILE)'
@@ -93,8 +93,8 @@ jupyter:
 	jupyter lab --no-browser
 
 
-ide/clean:
-	rm -rf target project/{target,src,project} .idea .bsp .bloop
+ide/clean: clean
+	rm -rf .idea .bsp .bloop .metals .vscode
 
 fast-deploy deploy jar: CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
 
