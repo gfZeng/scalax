@@ -81,6 +81,13 @@ def construct[T](cls: Class[?], args: Array[String]): T = {
   if (args.isEmpty)
     cls.getDeclaredConstructor().newInstance().asInstanceOf[T]
   else {
+    cls.getDeclaredMethods().filter(m => cls.isAssignableFrom(m.getReturnType())).foreach { m =>
+      val typs = m.getGenericParameterTypes()
+      val argv = tryCoerce(typs, args)
+      if (argv ne null) {
+        return m.invoke(null, argv: _*).asInstanceOf[T]
+      }
+    }
     val ctors = cls.getDeclaredConstructors()
     ctors.foreach {ctor =>
       val typs = ctor.getGenericParameterTypes
