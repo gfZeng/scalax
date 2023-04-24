@@ -192,10 +192,10 @@ def clamp[T <: Ordered[T]: ClassTag](x: T, y: T, z: T): T = {
 
 private def getProp(s: String): String = {
   val p = System.getProperty(s)
-  if (p eq null) {
-    val k = s.replace('.', '_').toUpperCase
-    System.getenv(k)
-  } else p
+  if (p ne null) p else {
+    val k = s.replace('.', '_')
+    System.getenv(k) || System.getenv(k.toUpperCase)
+  }
 }
 
 private val  __HEXES = "0123456789ABCDEF";

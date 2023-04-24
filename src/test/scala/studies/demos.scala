@@ -7,6 +7,7 @@ import java.util.*
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
+import scala.concurrent.Promise
 
 object Demo {
 
@@ -280,5 +281,29 @@ object JsonDemo2 {
     val f = JSON.read[Foo]("""{"name": "a"}""")
     println(f)
     println(Foo.values.toList)
+  }
+}
+
+
+object FutureThreadVisableDemo {
+  case class A(var x: Boolean) {
+    def update(x: Boolean)  = 
+      this.x = x
+      x
+  }
+
+  val p = Promise[A]()
+
+  def main(args: Array[String]): Unit = {
+    val a = A(false)
+    p.future.map {_ =>
+      if (a.x) println(a) else println("nothing")
+    }
+    Future {
+      val z = a() = true
+      println(s"z $z")
+      p.success(a)
+    }
+    Thread.sleep(1000)
   }
 }
