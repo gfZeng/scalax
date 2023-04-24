@@ -77,8 +77,7 @@ trait Memoize[K, V](m: mutable.Map[K, V] = null) {
 
 
 @nowarn
-def construct[T](clsname: String, args: Array[String]): T = {
-  val cls = Class.forName(clsname)
+def construct[T](cls: Class[?], args: Array[String]): T = {
   if (args.isEmpty)
     cls.getDeclaredConstructor().newInstance().asInstanceOf[T]
   else {
@@ -90,8 +89,20 @@ def construct[T](clsname: String, args: Array[String]): T = {
         return ctor.newInstance(argv: _*).asInstanceOf[T]
       }
     }
-    throw NoSuchMethodError(s"No ctor for: $clsname(${args.mkString(",")})")
+    throw NoSuchMethodError(s"No ctor for: $cls(${args.mkString(",")})")
   }
+}
+
+def construct[T](clsname: String, args: Array[String]): T = {
+  construct[T](Class.forName(clsname), args)
+}
+
+
+def construct[T](clsargs: String): T = {
+  val s = clsargs.split("@", 2)
+  val clsname = s(0)
+  val args = if (s.size == 1) Array[String]() else s(1).split(",")
+  construct[T](clsname, args)
 }
 
 
@@ -100,12 +111,7 @@ class ObjectMemoize[T](packagePath: String = null) extends Memoize[String, T](Tr
   val pkg =  packagePath || this.getClass.getPackageName
 
   @nowarn
-  override def make(nameArg: String): T = {
-    val s = nameArg.split("@", 2)
-    val clsname = s"$pkg.${s(0)}"
-    val args = if (s.size == 1) Array[String]() else s(1).split(",")
-    construct[T](clsname, args)
-  }
+  override def make(clsargs: String): T = construct[T](s"$pkg.$clsargs")
 
 }
 
@@ -322,13 +328,16 @@ def coerce(typ: String, arg: String): Object = {
     case "java.lang.Float" | "float"     => java.lang.Float.valueOf(arg)
     case "java.lang.Double" | "double"   => java.lang.Double.valueOf(arg)
     case "java.lang.Boolean" | "boolean" => java.lang.Boolean.valueOf(arg)
-    case "java.match.BigDecimal"         => java.math.BigDecimal(arg)
+    case "java.math.BigDecimal"          => java.math.BigDecimal(arg)
+    case "scala.math.BigDecimal"         => BigDecimal(arg)
     case _ =>
       val c = Class.forName(typ)
       if (classOf[scala.reflect.Enum].isAssignableFrom(c) || c.isEnum)
         c.getDeclaredMethod("valueOf", arg.getClass).invoke(null, arg)
+      else if(arg.contains('@'))
+        c.cast(construct[Object](arg))
       else
-        throw IllegalArgumentException(s"unmatched $typ $arg")
+        construct[Object](c, arg.split(","))
   }
 }
 
@@ -410,6 +419,11 @@ def invoke(method: String, args: Seq[String]): Any = {
         return m.invoke(obj, argv: _*)
       }
     }
+  }
+
+  if (mname == "main") {
+    val m = cls.getDeclaredMethod(mname, classOf[Array[String]])
+    m.invoke(null, args.toArray)
   }
 
   throw new NoSuchMethodError(s"$method(${args.mkString(", ")})")
