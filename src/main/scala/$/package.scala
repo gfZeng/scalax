@@ -19,6 +19,8 @@ import scala.annotation.{nowarn, tailrec}
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Random, Success}
+import java.util.concurrent.ForkJoinPool
+import scala.concurrent.ExecutionContext
 
 
 
@@ -155,6 +157,12 @@ def thread(cb: => Unit): Thread = {
 }
 
 def vthread(cb: => Unit): Thread = Thread.startVirtualThread(() => cb)
+
+
+def parallelsim(using ctxt: ExecutionContext) = ctxt match {
+  case pool: ForkJoinPool => pool.getParallelism()
+  case _ => -1
+}
 
 
 extension (x:AnyRef) {
