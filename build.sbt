@@ -19,9 +19,9 @@ libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "4.10.0"
 
 libraryDependencies += "org.redisson" % "redisson" % "3.17.1" % "provided"
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor-typed" % "2.8.0",
-  "com.typesafe.akka" %% "akka-stream" % "2.8.0",
-  "com.typesafe.akka" %% "akka-http" % "10.5.0"
+  "com.typesafe.akka" %% "akka-actor-typed" % "2.8.2",
+  "com.typesafe.akka" %% "akka-stream" % "2.8.2",
+  "com.typesafe.akka" %% "akka-http" % "10.5.2"
 ).map(_ % "provided")
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.13" % Test
