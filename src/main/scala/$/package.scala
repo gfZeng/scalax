@@ -17,7 +17,6 @@ import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Mac
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Random, Success}
 import java.util.concurrent.ForkJoinPool
 import scala.concurrent.ExecutionContext
@@ -80,16 +79,16 @@ trait Memoize[K, V](m: mutable.Map[K, V] = null) {
 
 @nowarn
 def construct[T](cls: Class[?], args: Array[String]): T = {
+  cls.getDeclaredMethods().filter(m => cls.isAssignableFrom(m.getReturnType())).foreach { m =>
+    val typs = m.getGenericParameterTypes()
+    val argv = tryCoerce(typs, args)
+    if (argv ne null) {
+      return m.invoke(null, argv: _*).asInstanceOf[T]
+    }
+  }
   if (args.isEmpty)
     cls.getDeclaredConstructor().newInstance().asInstanceOf[T]
   else {
-    cls.getDeclaredMethods().filter(m => cls.isAssignableFrom(m.getReturnType())).foreach { m =>
-      val typs = m.getGenericParameterTypes()
-      val argv = tryCoerce(typs, args)
-      if (argv ne null) {
-        return m.invoke(null, argv: _*).asInstanceOf[T]
-      }
-    }
     val ctors = cls.getDeclaredConstructors()
     ctors.foreach {ctor =>
       val typs = ctor.getGenericParameterTypes
@@ -467,26 +466,24 @@ def onExit(fn: => Unit) = {
 }
 
 
-class BufferedFunction[T, R](timedTs: Long)(fn: Seq[T] => R) {
+class BufferedFunction[T, R](timedTs: Long, limit: Int = Int.MaxValue)(fn: Seq[T] => R) {
 
-  val buf = ListBuffer[T]()
+  var buf = Seq[T]()
+
+  private def handle(): Unit = schedule(timedTs) {
+    synchronized {
+      fn(buf.take(limit))
+      buf = buf.drop(limit)
+      if (buf.nonEmpty) handle()
+    }
+  }
 
   def apply(x: T): Unit = apply(Seq(x))
 
   def apply(xs: Seq[T]): Unit = synchronized {
-    if (buf.isEmpty) {
-      schedule(timedTs) {
-        val xs = synchronized {
-          val xs = buf.toSeq
-          buf.clear()
-          xs
-        }
-        fn(xs)
-      }
-    }
+    if (buf.isEmpty) { handle() }
     buf ++= xs
   }
-
 }
 
 
