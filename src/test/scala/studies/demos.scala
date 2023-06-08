@@ -49,7 +49,7 @@ class Loop(i: Int) extends
         println(s"$i stopped")
         fs.awake()
     }
-    fs.sleep()
+    fs.await()
   }
 }
 
@@ -103,7 +103,7 @@ object GivenImplicitDeme {
 
 @main def proxyFetch(proxyUrl: String, url: String) = {
   val client = HTTP(proxyUrl)
-  val rsp    = client.request(url = url).await()
+  val rsp    = client.request(url = url).get()
   println(rsp)
   println(rsp.body().string())
   System.exit(0)

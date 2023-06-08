@@ -166,7 +166,7 @@ def parallelsim(using ctxt: ExecutionContext) = ctxt match {
 
 extension (x:AnyRef) {
 
-  def sleep() = x.synchronized {x.wait()}
+  def await() = x.synchronized {x.wait()}
 
   def awake() = x.synchronized {x.notify()}
 }
