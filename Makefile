@@ -94,7 +94,7 @@ jupyter:
 
 
 ide/clean: clean
-	rm -rf .idea .bsp .bloop .metals .vscode
+	rm -rf .idea .bsp .bloop .metals .vscode project/metals.sbt project/project
 
 fast-deploy deploy jar: CLASSPATHS = cat $(CLASSPATH_FILE) | tr ':' '\n'
 
