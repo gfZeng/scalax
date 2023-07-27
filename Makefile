@@ -14,6 +14,7 @@ set -a; [ -f .env ] && source .env; [ -f .$$env.env ] && source .$$env.env; set 
 endef
 
 .DEFAULT_GOAL := .default
+CMD ?= launch
 SHELL = bash
 .ONESHELL:
 .PHONY:
@@ -151,13 +152,14 @@ bin: jar
 	chmod +x $(BINNAME)
 
 
+
 define serviceinfo
 [Unit]
 ConditionPathExists=$(PWD)
 
 [Service]
 WorkingDirectory=$(PWD)
-Environment=CMD=launch
+Environment=CMD=$(CMD)
 EnvironmentFile=-$(PWD)/.%I.env
 ExecStart=/usr/bin/env make $$CMD env=%I
 ExecReload=/bin/kill -HUP $$MAINPID
@@ -174,9 +176,8 @@ service/install:
 	@test "$(RESTART_SEC)" != ""  && echo  RestartSec=$(RESTART_SEC) >> $(DIR)/$(SERVICE)@.service || :
 	@systemctl --user daemon-reload
 
-.default: ACTION ?= launch
 .default:
-	@exec $(MAKE) -s $(ACTION)
+	@exec $(MAKE) -s $(CMD)
 
 .%:
 	@:
