@@ -8,7 +8,6 @@ import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
 import scala.math.BigDecimal.RoundingMode.*
 import java.time.{Instant, LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
@@ -28,14 +27,10 @@ final val One: BigDecimal = 1
 final val Ten: BigDecimal = 10
 final val Inf: BigDecimal = 1_000_000_000L
 
-given Conversion[String, BigDecimal] with {
-  override def apply(x: String): BigDecimal = BigDecimal(x)
-}
-
 extension (x: BigDecimal) {
 
   @nowarn
-  def %%(unitOfMeasure: BigDecimal): BigDecimal = {
+  def ÷(unitOfMeasure: BigDecimal): BigDecimal = {
     val d = x.bigDecimal
     val n = unitOfMeasure.bigDecimal
     val mode = if (unitOfMeasure.signum > Zero) DOWN else UP
@@ -279,6 +274,9 @@ extension (s: String) {
 
   @nowarn
   def urldecode = URLDecoder.decode(s)
+
+
+  def decimal = BigDecimal(s)
 
 }
 

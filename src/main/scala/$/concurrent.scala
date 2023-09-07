@@ -3,6 +3,9 @@ package $
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import java.util.concurrent.TimeUnit
+import scala.concurrent.ExecutionContext
+
+given ExecutionContext = ExecutionContext.Implicits.global
 
 extension [T](f: Future[T]) {
 
