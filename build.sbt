@@ -1,6 +1,6 @@
 name := "scalax"
 
-scalaVersion       := "3.3.0"
+scalaVersion       := "3.3.1"
 run / fork         := true
 Test / logBuffered := false
 
