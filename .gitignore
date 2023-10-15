@@ -27,3 +27,4 @@ metals.sbt
 **/package-lock.json
 *.ipr
 *.iws
+**/*.semanticdb
