@@ -19,6 +19,8 @@ import scala.collection.concurrent.TrieMap
 import scala.util.{Failure, Random, Success}
 import java.util.concurrent.ForkJoinPool
 import scala.concurrent.ExecutionContext
+import scala.collection.SeqOps
+import scala.collection.mutable.ListBuffer
 
 
 
@@ -613,4 +615,14 @@ extension(date: String) {
   def ts: Long = if (zoned) datetime.ts else localDateTime.ts
 
   def ts(zone: ZoneId): Long = localDateTime.ts(zone)
+}
+
+def quota(x: String) = s"\"$x\""
+
+def a[T:ClassTag](ks: T*) = Array[T](ks: _*)
+
+extension [T](x:T) {
+
+  def `in`(xs: Seq[T]) = xs.contains(x)
+  def `in`(xs: Array[T]) = xs.contains(x)
 }
