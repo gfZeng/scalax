@@ -23,6 +23,8 @@ import org.redisson.api.map.event.EntryEvent
 import org.redisson.api.map.event.EntryUpdatedListener
 import org.redisson.api.map.event.EntryExpiredListener
 import org.redisson.api.map.event.EntryRemovedListener
+import java.util.Comparator
+import org.redisson.api.StreamMessageId
 
 type Redis = RedissonClient
 
@@ -205,5 +207,24 @@ object Redis {
         (buf, _) => {
           JSON.read[V](ByteBufInputStream(buf))
         }
+  }
+
+  given StreamMessageIdComparator: Comparator[StreamMessageId] = new Comparator[StreamMessageId] {
+    def compare(o1: StreamMessageId, o2: StreamMessageId): Int = {
+      val c1 = o1.getId0() compareTo o2.getId0()
+      if (c1 == 0) o1.getId1() compareTo o2.getId1() else c1
+    }
+  }
+
+  import java.util.Map.Entry
+  type StreamMessage = Entry[StreamMessageId, java.util.Map[String, String]]
+  given StreamMessageComparator: Comparator[StreamMessage] = new Comparator[StreamMessage] {
+    def compare( o1: StreamMessage, o2: StreamMessage): Int = {
+      StreamMessageIdComparator.compare(o1.getKey(), o2.getKey())
+    }
+  }
+
+  given Ordering[StreamMessage] with {
+    def compare(x: StreamMessage, y: StreamMessage): Int = StreamMessageComparator.compare(x, y)
   }
 }

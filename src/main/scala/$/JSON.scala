@@ -157,7 +157,7 @@ object JSON {
 
   given To[String] with {
 
-    def apply(node: Node): String = node.asText()
+    def apply(node: Node): String = node.asText(null)
 
     def apply(node: Node, defaultVal: => String): String = node.asText(defaultVal)
   }
