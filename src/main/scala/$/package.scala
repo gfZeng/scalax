@@ -619,7 +619,7 @@ extension(date: String) {
 
 def quota(x: String) = s"\"$x\""
 
-def a[T:ClassTag](ks: T*) = Array[T](ks: _*)
+inline def a[T:ClassTag](ks: T*) = Array[T](ks: _*)
 
 extension [T](x:T) {
 

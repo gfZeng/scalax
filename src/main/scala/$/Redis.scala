@@ -186,28 +186,41 @@ object Redis {
 
   }
 
+  import EntryEvent.Type
+
+  export Type.*
+
   extension [K, V](cache: RMapCache[K, V]) {
-    def listen(fn: EntryEvent[K, V] => Unit) = {
-      cache.addListener(new EntryCreatedListener[K, V] {
-        def onCreated(event: EntryEvent[K, V]): Unit = {
-          fn(event)
-        }
-      })
-      cache.addListener(new EntryUpdatedListener[K, V] {
-        def onUpdated(event: EntryEvent[K, V]): Unit = {
-          fn(event)
-        }
-      })
-      cache.addListener(new EntryExpiredListener[K, V] {
-        def onExpired(event: EntryEvent[K, V]): Unit = {
-          fn(event)
-        }
-      })
-      cache.addListener(new EntryRemovedListener[K, V] {
-        def onRemoved(event: EntryEvent[K, V]): Unit = {
-          fn(event)
-        }
-      })
+    def listen(fn: EntryEvent[K, V] => Unit): Unit =
+      listen(Type.values: _*)(fn)
+
+    def listen(typs: Type*)(fn: EntryEvent[K, V] => Unit) = {
+      typs.foreach {
+        case CREATED =>
+          cache.addListener(new EntryCreatedListener[K, V] {
+            def onCreated(event: EntryEvent[K, V]): Unit = {
+              fn(event)
+            }
+          })
+        case UPDATED =>
+          cache.addListener(new EntryUpdatedListener[K, V] {
+            def onUpdated(event: EntryEvent[K, V]): Unit = {
+              fn(event)
+            }
+          })
+        case EXPIRED =>
+          cache.addListener(new EntryExpiredListener[K, V] {
+            def onExpired(event: EntryEvent[K, V]): Unit = {
+              fn(event)
+            }
+          })
+        case REMOVED =>
+          cache.addListener(new EntryRemovedListener[K, V] {
+            def onRemoved(event: EntryEvent[K, V]): Unit = {
+              fn(event)
+            }
+          })
+      }
     }
   }
 
