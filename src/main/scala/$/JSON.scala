@@ -140,6 +140,10 @@ object JSON {
     def apply(node: Node, defaultVal: => T): T
   }
 
+  given Conversion[Node, ObjectNode] with {
+    def apply(x: Node): ObjectNode = x.asInstanceOf[ObjectNode]
+  }
+
   extension (json: Node) {
 
     inline def apply(k: String): Node = json.get(k) || Null
