@@ -64,7 +64,7 @@ extension (x: BigDecimal) {
 trait Memoize[K, V](m: mutable.Map[K, V] = null) {
   final val _VALUES = m || mutable.HashMap[K, V]()
 
-  export _VALUES.{get, contains, remove, -=, values}
+  export _VALUES.{get, contains, remove, -=, values, keys, keySet}
 
   def make(k: K) = null.asInstanceOf[V]
 
