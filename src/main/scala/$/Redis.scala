@@ -122,6 +122,13 @@ object Redis {
     def unsubscribe(ids: Integer*) = {
       tp.removeListener(ids: _*)
     }
+
+    def listen(fn: Either[String, String] => Unit) = {
+      tp.addListener (new {
+        def onSubscribe(chnl: String): Unit = fn(Left(chnl))
+        def onUnsubscribe(chnl: String): Unit = (fn(Right(chnl)))
+      })
+    }
   }
 
   extension (tp: RPatternTopic) {
