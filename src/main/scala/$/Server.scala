@@ -83,6 +83,7 @@ object Server {
         x match {
           case x: String    => x
           case x: JSON.Node => x.toString
+          case x: Throwable => s"""{"error":"${x.getMessage()}"}"""
           case _ => JSON.str(x)
         }
       )
