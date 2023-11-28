@@ -67,7 +67,7 @@ launch:
 
 define RUNSHELL
 export PYTHONPATH=$$PYTHONPATH:$$0
-if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)"; then
+if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)" 2> /dev/null; then
 	exec $(PYTHON) -m $$APP
 else
 	exec $(JAVA) -cp "$(CLASSPATH)" $$APP
