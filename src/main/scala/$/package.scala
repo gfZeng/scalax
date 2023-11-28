@@ -22,8 +22,6 @@ import scala.concurrent.ExecutionContext
 import scala.collection.SeqOps
 import scala.collection.mutable.ListBuffer
 
-
-
 final val Zero: BigDecimal = 0
 final val One: BigDecimal = 1
 final val Ten: BigDecimal = 10
@@ -73,7 +71,6 @@ trait Memoize[K, V](m: mutable.Map[K, V] = null) {
   def update(k: K, v: V) = _VALUES(k) = v
 }
 
-
 @nowarn
 def construct[T](cls: Class[?], args: Array[String]): T = {
   cls.getDeclaredMethods().filter(m => cls.isAssignableFrom(m.getReturnType())).foreach { m =>
@@ -87,7 +84,7 @@ def construct[T](cls: Class[?], args: Array[String]): T = {
     cls.getDeclaredConstructor().newInstance().asInstanceOf[T]
   else {
     val ctors = cls.getDeclaredConstructors()
-    ctors.foreach {ctor =>
+    ctors.foreach { ctor =>
       val typs = ctor.getGenericParameterTypes
       val argv = tryCoerce(typs, args)
       if (argv ne null) {
@@ -102,7 +99,6 @@ def construct[T](clsname: String, args: Array[String]): T = {
   construct[T](Class.forName(clsname), args)
 }
 
-
 def construct[T](clsargs: String): T = {
   val s = clsargs.split("@", 2)
   val clsname = s(0)
@@ -110,22 +106,20 @@ def construct[T](clsargs: String): T = {
   construct[T](clsname, args)
 }
 
-
 class ObjectMemoize[T](packagePath: String = null) extends Memoize[String, T](TrieMap()) {
 
-  val pkg =  packagePath || this.getClass.getPackageName
+  val pkg = packagePath || this.getClass.getPackageName
 
   @nowarn
   override def make(clsargs: String): T = construct[T](s"$pkg.$clsargs")
 
 }
 
-
 extension (x: Boolean) {
 
   inline infix def ||(y: => Nothing): Unit = if (!x) y
 
-  inline infix def &&(y: => Nothing):  Unit = if (x) y
+  inline infix def &&(y: => Nothing): Unit = if (x) y
 }
 
 extension [T <: AnyRef](x: T) {
@@ -134,17 +128,16 @@ extension [T <: AnyRef](x: T) {
     if (x ne null) x else y
   }
 
-  inline def ??[R](inline fn: T=>R): R = {
+  inline def ??[R](inline fn: T => R): R = {
     if (x eq null) null.asInstanceOf[R] else fn(x)
   }
 }
 
 extension [T](x: T) {
 
-  inline def let(fn: T => Any) = {fn(x); x}
+  inline def let(fn: T => Any) = { fn(x); x }
 
 }
-
 
 def thread(cb: => Unit): Thread = {
   val th = new Thread(() => cb)
@@ -154,31 +147,25 @@ def thread(cb: => Unit): Thread = {
 
 def vthread(cb: => Unit): Thread = Thread.startVirtualThread(() => cb)
 
-
 def parallelsim(using ctxt: ExecutionContext) = ctxt match {
   case pool: ForkJoinPool => pool.getParallelism()
-  case _ => -1
+  case _                  => -1
 }
 
+extension (x: AnyRef) {
 
-extension (x:AnyRef) {
+  def await() = x.synchronized { x.wait() }
 
-  def await() = x.synchronized {x.wait()}
-
-  def awake() = x.synchronized {x.notify()}
+  def awake() = x.synchronized { x.notify() }
 }
-
-
 
 inline def nowMs(): Long = System.currentTimeMillis()
 inline def now() = Instant.now()
 inline def nowSeconds(): Long = System.currentTimeMillis() / 1000L
 
-
-
 def timingNanos[T](key: String)(fn: => T) = {
   val startNs = System.nanoTime()
-  val ret     = fn
+  val ret = fn
   println(s"Elapsed time(ms): $key = ${(System.nanoTime() - startNs) / 1e6}")
   ret
 }
@@ -187,7 +174,7 @@ def timingNanos[T](fn: => T): T = timingNanos(null) { fn }
 
 def timing[T](key: String)(fn: => T) = {
   val startMs = nowMs()
-  val ret     = fn
+  val ret = fn
   println(s"Elapsed time(ms): $key = ${nowMs() - startMs}")
   ret
 }
@@ -209,13 +196,14 @@ def clamp[T <: Ordered[T]: ClassTag](x: T, y: T, z: T): T = {
 
 private def getProp(s: String): String = {
   val p = System.getProperty(s)
-  if (p ne null) p else {
+  if (p ne null) p
+  else {
     val k = s.replace('.', '_')
     System.getenv(k) || System.getenv(k.toUpperCase)
   }
 }
 
-private val  __HEXES = "0123456789ABCDEF";
+private val __HEXES = "0123456789ABCDEF";
 
 extension (bs: Array[Byte]) {
   def base64 = Base64.getEncoder.encodeToString(bs)
@@ -223,12 +211,11 @@ extension (bs: Array[Byte]) {
   def hex = {
     val sb = new StringBuilder(2 * bs.length)
     bs.foreach { b =>
-      sb.append(__HEXES.charAt((b & 0xF0) >> 4)).append(__HEXES.charAt((b & 0x0F)));
+      sb.append(__HEXES.charAt((b & 0xf0) >> 4)).append(__HEXES.charAt((b & 0x0f)));
     }
     sb.toString()
   }
 }
-
 
 trait Signer {
   def apply(s: String): Array[Byte]
@@ -277,7 +264,6 @@ extension (s: String) {
   @nowarn
   def urldecode = URLDecoder.decode(s)
 
-
   def decimal = BigDecimal(s)
 
 }
@@ -293,27 +279,23 @@ extension [E](xs: Iterable[E]) {
   }
 }
 
-
-
 lazy val timer = new Timer()
 
 def schedule(delay: Long)(task: => Unit): Unit = {
-  timer.schedule(
-    new TimerTask {
-      def run(): Unit = task
-    },
-    delay
-  )
+
+  val tsk = new TimerTask {
+    def run(): Unit = task
+  }
+  timer.schedule(tsk, delay)
+  tsk
 }
 
-def schedule(delay: Long, period: Long)(task: => Unit): Unit = {
-  timer.schedule(
-    new TimerTask {
-      def run(): Unit = task
-    },
-    delay,
-    period
-  )
+def schedule(delay: Long, period: Long)(task: => Unit): TimerTask = {
+  val tsk = new TimerTask {
+    def run(): Unit = task
+  }
+  timer.schedule(tsk, delay, period)
+  tsk
 }
 
 def timeout[T](delay: Long)(fn: => T) = {
@@ -325,7 +307,6 @@ def timeout[T](delay: Long)(fn: => T) = {
 }
 
 inline def sleep(ms: Long = Long.MaxValue) = Thread.sleep(ms)
-
 
 @main def classpath(path: String) = {
   val classpath = System.getProperty("java.class.path")
@@ -348,7 +329,7 @@ def coerce(typ: String, arg: String): Object = {
       val c = Class.forName(typ)
       if (classOf[scala.reflect.Enum].isAssignableFrom(c) || c.isEnum)
         c.getDeclaredMethod("valueOf", arg.getClass).invoke(null, arg)
-      else if(arg.contains('@'))
+      else if (arg.contains('@'))
         c.cast(construct[Object](arg))
       else
         construct[Object](c, arg.split(","))
@@ -357,7 +338,7 @@ def coerce(typ: String, arg: String): Object = {
 
 private def tryCoerce(typs: Array[Type], args: Seq[String], argv: Seq[Object] = Seq()): Seq[Object] = {
   if (typs.size > args.size) return null
-  if (typs.size == 0)        return if (args.size == 0) argv else null
+  if (typs.size == 0) return if (args.size == 0) argv else null
   val tpName = typs(0).getTypeName
   try {
     if (tpName.startsWith("scala.collection.immutable.Seq")) {
@@ -372,9 +353,9 @@ private def tryCoerce(typs: Array[Type], args: Seq[String], argv: Seq[Object] = 
 
 @nowarn
 def invoke(pkg: String, method: String, args: Seq[String]): Any = {
-  val pth       = pkg.replace('.', '/')
+  val pth = pkg.replace('.', '/')
   val resources = Thread.currentThread().getContextClassLoader.getResources(pth)
-  var cnames    = List[String]()
+  var cnames = List[String]()
   resources.asIterator().forEachRemaining { url =>
     val uri = url.toURI
     val p =
@@ -384,12 +365,13 @@ def invoke(pkg: String, method: String, args: Seq[String]): Any = {
           .getPath(pth)
       } else { Paths.get(uri) }
 
-    Files.list(p)
-         .map(_.getFileName.toString)
-         .filter(_.endsWith("$package.class"))
-         .forEach { c =>
-           cnames ::= c.split('.')(0)
-         }
+    Files
+      .list(p)
+      .map(_.getFileName.toString)
+      .filter(_.endsWith("$package.class"))
+      .forEach { c =>
+        cnames ::= c.split('.')(0)
+      }
   }
 
   cnames.foreach { cname =>
@@ -410,7 +392,7 @@ def invoke(pkg: String, method: String, args: Seq[String]): Any = {
 
 @nowarn
 def invoke(method: String, args: Seq[String]): Any = {
-  val parsed           = method.split("/")
+  val parsed = method.split("/")
   val clsArg = parsed(0).split("@")
   val clsname = clsArg(0)
   val ctorArg = if (clsArg.size == 1) Array[String]() else clsArg(1).split(",")
@@ -428,7 +410,7 @@ def invoke(method: String, args: Seq[String]): Any = {
       val typs = m.getGenericParameterTypes
       val argv = tryCoerce(typs, args)
       if (argv ne null) {
-        val obj =  if(Modifier.isStatic(m.getModifiers)) null else construct[Object](clsname, ctorArg)
+        val obj = if (Modifier.isStatic(m.getModifiers)) null else construct[Object](clsname, ctorArg)
         println(s"${obj || clsname} for $m")
         return m.invoke(obj, argv: _*)
       }
@@ -456,8 +438,8 @@ def invoke(method: String, args: Seq[String]): Any = {
             e.printStackTrace()
             System.exit(1)
         }
-      case _: Unit => 
-      case _ => println(ret)
+      case _: Unit =>
+      case _       => println(ret)
     }
   }
 }
@@ -465,7 +447,6 @@ def invoke(method: String, args: Seq[String]): Any = {
 def onExit(fn: => Unit) = {
   Runtime.getRuntime.addShutdownHook(new Thread(() => fn))
 }
-
 
 class BufferedFunction[T, R](timedTs: Long, limit: Int = Int.MaxValue)(fn: Seq[T] => R) {
 
@@ -487,7 +468,6 @@ class BufferedFunction[T, R](timedTs: Long, limit: Int = Int.MaxValue)(fn: Seq[T
   }
 }
 
-
 extension (e: Throwable) {
   @tailrec
   def rootMsg: String = {
@@ -498,16 +478,14 @@ extension (e: Throwable) {
   }
 }
 
-extension [T <: Comparable[T]](x: T)  {
+extension [T <: Comparable[T]](x: T) {
 
   def min(y: T) = if (x eq null) y else if (y eq null) x else if ((x compareTo y) < 0) x else y
 
   def max(y: T) = if (x eq null) y else if (y eq null) x else if ((x compareTo y) > 0) x else y
 }
 
-
 export org.apache.commons.lang3.RandomStringUtils.{randomAlphanumeric as randomStr}
-
 
 extension [T](xs: Seq[T]) {
   def random = xs(Random.nextInt(xs.size))
@@ -544,14 +522,12 @@ object TimeLimited extends Memoize[Any, Long]() {
 
   def apply(key: Any, limitedMs: Long)(fn: => Unit): Unit = {
     val nms = nowMs()
-    if (nms - this(key) < limitedMs) {return}
+    if (nms - this(key) < limitedMs) { return }
     this(key) = nms
     fn
   }
 
 }
-
-
 
 val sysZone = ZoneId.systemDefault()
 val UTC = ZoneId.of("UTC")
@@ -565,21 +541,19 @@ extension (zone: ZoneId) {
   def offset(ts: Long) = zone.getRules.getOffset(Instant.ofEpochMilli(ts))
 }
 
-
 extension (ts: Long) {
 
   def zoneOffset: ZoneOffset = zoneOffset(sysZone)
 
   def zoneOffset(zone: ZoneId) = zone.offset(ts)
 
-  def localDateTime = LocalDateTime.ofEpochSecond(ts/1000, 0, sysZone.offset(ts))
+  def localDateTime = LocalDateTime.ofEpochSecond(ts / 1000, 0, sysZone.offset(ts))
 
   inline def ldt: LocalDateTime = localDateTime
 
   def localISO: String = localDateTime.toString
 
   inline def liso: String = localISO
-
 
   inline def datetime: ZonedDateTime = datetime(sysZone)
 
@@ -594,16 +568,16 @@ extension (ts: Long) {
   def iso(zone: ZoneId): String = datetime(zone).format(DateTimeISOFormatter)
 }
 
-extension(zdt: ZonedDateTime) {
+extension (zdt: ZonedDateTime) {
   def ts: Long = zdt.toInstant().toEpochMilli()
 }
 
-extension(ldt: LocalDateTime) {
+extension (ldt: LocalDateTime) {
   def ts(zone: ZoneId): Long = ldt.atZone(zone).ts
   def ts: Long = ts(sysZone)
 }
 
-extension(date: String) {
+extension (date: String) {
 
   private def zoned = date.indexOf('+', 10) > 0 || date.indexOf('-', 10) > 0
 
@@ -620,9 +594,9 @@ extension(date: String) {
 
 def quota(x: String) = s"\"$x\""
 
-inline def a[T:ClassTag](ks: T*) = Array[T](ks: _*)
+inline def a[T: ClassTag](ks: T*) = Array[T](ks: _*)
 
-extension [T](x:T) {
+extension [T](x: T) {
 
   def `in`(xs: Seq[T]) = xs.contains(x)
   def `in`(xs: Array[T]) = xs.contains(x)
