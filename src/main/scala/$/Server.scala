@@ -23,6 +23,8 @@ import scala.util.{Failure, Success}
 
 object Server {
 
+  System.setProperty("akka.http.server.parsing.illegal-header-warnings", "off")
+
   implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "engine-server")
 
   implicit val executionContext: ExecutionContextExecutor = system.executionContext
