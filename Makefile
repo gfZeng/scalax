@@ -6,7 +6,7 @@ set -a; [ -f .env ] && source .env; [ -f .$$env.env ] && source .$$env.env; set 
 endef
 
 .DEFAULT_GOAL := .default
-CMD ?= launch
+CMD ?= run
 SHELL = bash
 .ONESHELL:
 .PHONY: bin
