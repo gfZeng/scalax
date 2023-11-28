@@ -456,6 +456,7 @@ def invoke(method: String, args: Seq[String]): Any = {
             e.printStackTrace()
             System.exit(1)
         }
+      case _: Unit => 
       case _ => println(ret)
     }
   }

@@ -149,15 +149,11 @@ define BINSHELL
 for arg in "$$@"; do [[ $$arg == *=* ]] && export $$arg; done
 $(LOAD_ENV)
 APP=$${APP:-$(APP)}
-if file $$0 | grep "binary data" > /dev/null; then 
-	export PYTHONPATH=$$PYTHONPATH:$$0
-	if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)"; then
-		exec $(PYTHON) -m $$APP
-	else
-		exec java -server -cp $$0 $$APP
-	fi
+export PYTHONPATH=$$PYTHONPATH:$$0
+if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)"; then
+	exec $(PYTHON) -m $$APP
 else
- 	exec make -f $$0 $$@
+	exec java -server -cp $$0 $$APP
 fi
 endef
 
