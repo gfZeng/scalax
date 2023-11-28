@@ -36,6 +36,7 @@ else
 endif
 
 CLASSPATH_FILE ?= .java.classpath
+CLASSPATH = $$(eval echo `cat $(CLASSPATH_FILE)`)
 SRCDIR ?= src
 
 
@@ -56,18 +57,26 @@ compile:
 	@perl -pi -e "s{$(MAVEN_DIR)}{\\\$$MAVEN_DIR}g" $(CLASSPATH_FILE)
 
 compile!: clean compile
-JAVACMD = $(JAVA) -cp "$$(eval echo `cat $(CLASSPATH_FILE)`)"
 
 fast-compile:
 	@$(SBT) --client compile
 
 launch:
 	@$(LOAD_ENV)
-	@exec $(JAVACMD) $$APP
+	@exec $(JAVA) -cp "$(CLASSPATH)" '$$.launch' $$APP
+
+define RUNSHELL
+export PYTHONPATH=$$PYTHONPATH:$$0
+if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)"; then
+	exec $(PYTHON) -m $$APP
+else
+	exec $(JAVA) -cp "$(CLASSPATH)" $$APP
+fi
+endef
 
 run:
 	@$(LOAD_ENV)
-	@exec $(JAVACMD) '$$.launch' $$APP
+	$(RUNSHELL)
 
 
 #.ONESHELL:
@@ -114,6 +123,7 @@ fast-deploy:
 
 bin %/jar %/jar! jar jar!: BINNAME ?= $(shell basename $(PWD))
 bin %/jar %/jar! jar jar!: JARFILE ?= $(shell basename $(PWD)).jar
+bin %/jar %/jar! jar jar!: CLASSPATH = $$0
 .py/jar: 
 	@test -f $(JARFILE) && flags=uf || flags=cf
 	for path in `echo $$PYTHONPATH | tr ':' '\n'`; do
@@ -149,12 +159,7 @@ define BINSHELL
 for arg in "$$@"; do [[ $$arg == *=* ]] && export $$arg; done
 $(LOAD_ENV)
 APP=$${APP:-$(APP)}
-export PYTHONPATH=$$PYTHONPATH:$$0
-if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)"; then
-	exec $(PYTHON) -m $$APP
-else
-	exec java -server -cp $$0 $$APP
-fi
+$(RUNSHELL)
 endef
 
 fuck:
