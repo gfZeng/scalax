@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
 
-#\
-define(){ :; }; endef(){ :; }
-#\
-for arg in "$@"; do [[ $arg == *=* ]] && export $arg; done
-#\
-set -a; [ -f .env ] && source .env; [ -f .$env.env ] && source .$env.env; set +a;
-#\
-file $0 | grep "binary data" > /dev/null && exec java -server -cp $0 $APP || exec make -f $0 $@
 
 define LOAD_ENV
 set -a; [ -f .env ] && source .env; [ -f .$$env.env ] && source .$$env.env; set +a;
@@ -17,7 +9,7 @@ endef
 CMD ?= launch
 SHELL = bash
 .ONESHELL:
-.PHONY:
+.PHONY: bin
 
 
 SBT ?= sbt
@@ -119,9 +111,17 @@ fast-deploy:
 	@test -f makefile && rsync -L makefile $(DEST) || :
 	@$(RSYNC) target/scala-*           $(DEST)/target
 
-bin jar jar!: JARNAME ?= $(shell basename $(PWD))
+
+bin %/jar %/jar! jar jar!: BINNAME ?= $(shell basename $(PWD))
+bin %/jar %/jar! jar jar!: JARFILE ?= $(shell basename $(PWD)).jar
+.py/jar: 
+	@test -f $(JARFILE) && flags=uf || flags=cf
+	for path in `echo $$PYTHONPATH | tr ':' '\n'`; do
+		jar $$flags $(JARFILE) -C $$path .
+	done
+	
 jar:
-	@test -f $(JARNAME).jar && update=true || update=false
+	@test -f $(JARFILE) && update=true || update=false
 	tmp=__temp__; pwd=$(PWD)
 	mkdir -p $$tmp
 	for f in `$(CLASSPATHS) | $(REV)`; do
@@ -136,19 +136,38 @@ jar:
 				$(RSYNC) -R $$f/./ $$tmp
 		esac
 	done
-	cd $$pwd; echo packing to $(JARNAME).jar
-	$$update && echo "update jar"; flag=uf || echo "create jar" || flag=cf
-	jar $$flag $(JARNAME).jar -C $$tmp .
+	cd $$pwd
+	if $$update; then echo "Updating $(JARFILE)"; flag=uf; else echo "Creating $(JARFILE)"; flag=cf; fi
+	jar $$flag $(JARFILE) -C $$tmp .
 	rm -rf $$tmp
 
-jar!:
-	rm $(JARNAME).jar
-	$(MAKE) -s jar
+jar! py/jar!:
+	@rm -rf $(JARFILE)
+	$(MAKE) -s $(subst !, , $@)
 
-bin: BINNAME ?= $(JARNAME)
-bin: jar
-	@printf '#!/usr/bin/env bash\nAPP=$${APP:-$(APP)}\n' > $(BINNAME)
-	@cat $(MAKEFILE_LIST) $(JARNAME).jar >> $(BINNAME)
+define BINSHELL
+for arg in "$$@"; do [[ $$arg == *=* ]] && export $$arg; done
+$(LOAD_ENV)
+APP=$${APP:-$(APP)}
+if file $$0 | grep "binary data" > /dev/null; then 
+	export PYTHONPATH=$$PYTHONPATH:$$0
+	if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)"; then
+		exec $(PYTHON) -m $$APP
+	else
+		exec java -server -cp $$0 $$APP
+	fi
+else
+ 	exec make -f $$0 $$@
+fi
+endef
+
+fuck:
+	@echo '$(BINSHELL)'
+
+bin:
+	@echo '#!/usr/bin/env bash' > $(BINNAME)
+	@echo '$(BINSHELL)'          >> $(BINNAME)
+	@cat $(JARFILE)            >> $(BINNAME)
 	chmod +x $(BINNAME)
 
 
