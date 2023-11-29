@@ -156,7 +156,7 @@ jar! py/jar!:
 	$(MAKE) -s $(subst !, , $@)
 
 define BINSHELL
-for arg in "$$@"; do [[ $$arg == *=* ]] && export $$arg; done
+for arg in "$$@"; do [[ $$arg == *=* ]] && export $$arg || export APP="$$APP $$arg"; done
 $(LOAD_ENV)
 APP=$${APP:-$(APP)}
 $(RUNSHELL)
