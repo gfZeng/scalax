@@ -67,7 +67,13 @@ launch:
 
 define RUNSHELL
 export PYTHONPATH=$$PYTHONPATH:$$0
-if $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$${APP%% *}\") else 1)" 2> /dev/null; then
+export APP="`echo $$APP`"
+PROG=$${APP%% *}
+PROGFILE=$${PROG//.//}
+if file $$0 | grep 'binary' > /dev/null && unzip -l $$0 2> /dev/null | grep $$PROGFILE > /dev/null ; then
+	unzip -p $$0 $$PROGFILE 2> /dev/null | sed s/^#!//g | bash
+	exit $?
+elif $(PYTHON) -c "import importlib.util as iu, sys; sys.exit(0 if iu.find_spec(\"$$PROG\") else 1)" 2> /dev/null; then
 	exec $(PYTHON) -m $$APP
 else
 	exec $(JAVA) -cp "$(CLASSPATH)" $$APP
@@ -129,7 +135,12 @@ bin %/jar %/jar! jar jar!: CLASSPATH = $$0
 	for path in `echo $$PYTHONPATH | tr ':' '\n'`; do
 		jar $$flags $(JARFILE) -C $$path .
 	done
-	
+
+.bin/jar: BINPATH ?= bin
+.bin/jar:
+	@test -f $(JARFILE) && flag=uf || flag=cf
+	@jar $$flag $(JARFILE) -C $$BINPATH .
+
 jar:
 	@test -f $(JARFILE) && update=true || update=false
 	tmp=__temp__; pwd=$(PWD)
@@ -158,7 +169,7 @@ jar! py/jar!:
 define BINSHELL
 for arg in "$$@"; do [[ $$arg == *=* ]] && export $$arg || export APP="$$APP $$arg"; done
 $(LOAD_ENV)
-APP=$${APP:-$(APP)}
+export APP=$${APP:-$(APP)}
 $(RUNSHELL)
 endef
 
