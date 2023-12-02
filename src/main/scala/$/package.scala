@@ -419,7 +419,7 @@ def invoke(method: String, args: Seq[String]): Any = {
 
   if (mname == "main") {
     val m = cls.getDeclaredMethod(mname, classOf[Array[String]])
-    m.invoke(null, args.toArray)
+    return m.invoke(null, args.toArray)
   }
 
   throw new NoSuchMethodError(s"$method(${args.mkString(", ")})")
