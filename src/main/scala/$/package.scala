@@ -411,7 +411,6 @@ def invoke(method: String, args: Seq[String]): Any = {
       val argv = tryCoerce(typs, args)
       if (argv ne null) {
         val obj = if (Modifier.isStatic(m.getModifiers)) null else construct[Object](clsname, ctorArg)
-        println(s"${obj || clsname} for $m")
         return m.invoke(obj, argv: _*)
       }
     }
