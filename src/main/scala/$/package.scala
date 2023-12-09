@@ -281,7 +281,7 @@ extension [E](xs: Iterable[E]) {
 
 lazy val timer = new Timer()
 
-def schedule(delay: Long)(task: => Unit): Unit = {
+def schedule(delay: Long)(task: => Unit) = {
 
   val tsk = new TimerTask {
     def run(): Unit = task
