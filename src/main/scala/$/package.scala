@@ -77,7 +77,7 @@ def construct[T](cls: Class[?], args: Array[String]): T = {
     val typs = m.getGenericParameterTypes()
     val argv = tryCoerce(typs, args)
     if (argv ne null) {
-      return m.invoke(null, argv: _*).asInstanceOf[T]
+      return m.invoke(null, argv*).asInstanceOf[T]
     }
   }
   if (args.isEmpty)
@@ -88,7 +88,7 @@ def construct[T](cls: Class[?], args: Array[String]): T = {
       val typs = ctor.getGenericParameterTypes
       val argv = tryCoerce(typs, args)
       if (argv ne null) {
-        return ctor.newInstance(argv: _*).asInstanceOf[T]
+        return ctor.newInstance(argv*).asInstanceOf[T]
       }
     }
     throw NoSuchMethodError(s"No ctor for: $cls(${args.mkString(",")})")
@@ -381,7 +381,7 @@ def invoke(pkg: String, method: String, args: Seq[String]): Any = {
         val typs = m.getGenericParameterTypes
         val argv = tryCoerce(typs, args)
         if (argv ne null) {
-          return m.invoke(null, argv: _*)
+          return m.invoke(null, argv*)
         }
       }
     }
@@ -411,7 +411,7 @@ def invoke(method: String, args: Seq[String]): Any = {
       val argv = tryCoerce(typs, args)
       if (argv ne null) {
         val obj = if (Modifier.isStatic(m.getModifiers)) null else construct[Object](clsname, ctorArg)
-        return m.invoke(obj, argv: _*)
+        return m.invoke(obj, argv*)
       }
     }
   }
@@ -593,7 +593,7 @@ extension (date: String) {
 
 def quota(x: String) = s"\"$x\""
 
-inline def a[T: ClassTag](ks: T*) = Array[T](ks: _*)
+inline def a[T: ClassTag](ks: T*) = Array[T](ks*)
 
 extension [T](x: T) {
 

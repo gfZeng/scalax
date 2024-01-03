@@ -120,7 +120,7 @@ object Redis {
     }
 
     def unsubscribe(ids: Integer*) = {
-      tp.removeListener(ids: _*)
+      tp.removeListener(ids*)
     }
 
     def listen(fn: Either[String, String] => Unit) = {
@@ -164,7 +164,7 @@ object Redis {
 
     def unsubscribe[T: ClassTag](name: String, ids: Integer*) = {
       val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-      r.topic[T](name).removeListener(ids: _*)
+      r.topic[T](name).removeListener(ids*)
     }
 
     def psubscribe[T: ClassTag](name: String)(fn: T => Unit) = {
@@ -199,7 +199,7 @@ object Redis {
 
   extension [K, V](cache: RMapCache[K, V]) {
     def listen(fn: EntryEvent[K, V] => Unit): Unit =
-      listen(Type.values: _*)(fn)
+      listen(Type.values*)(fn)
 
     def listen(typs: Type*)(fn: EntryEvent[K, V] => Unit) = {
       typs.foreach {
