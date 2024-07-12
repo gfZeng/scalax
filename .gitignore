@@ -8,7 +8,7 @@
 .DS_Store
 /config/**/*.properties
 /config/**/*.json
-/.java.classpath
+/*.java.classpath
 /*.env
 !.env
 .bsp
