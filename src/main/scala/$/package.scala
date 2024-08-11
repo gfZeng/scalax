@@ -424,24 +424,24 @@ def invoke(method: String, args: Seq[String]): Any = {
   throw new NoSuchMethodError(s"$method(${args.mkString(", ")})")
 }
 
-@main def launch(method: String, args: String*): Unit = {
-  val ret = invoke(method, args)
-  if ("return.print".prop("true").toBoolean) {
-    ret match {
-      case f: Future[_] =>
-        f.onComplete {
-          case Success(v) =>
-            println(v)
-            System.exit(0)
-          case Failure(e) =>
-            e.printStackTrace()
-            System.exit(1)
-        }
-      case _: Unit =>
-      case _       => println(ret)
-    }
+@main def run(method: String, args: String*): Unit = {
+  launch(method, args*) match {
+    case f: Future[_] =>
+      f.onComplete {
+        case Success(v) =>
+          println(v)
+          System.exit(0)
+        case Failure(e) =>
+          e.printStackTrace()
+          System.exit(1)
+      }
+      f.get()
+    case _: Unit =>
+    case ret     => println(ret)
   }
 }
+
+@main def launch(method: String, args: String*): Any = invoke(method, args)
 
 def onExit(fn: => Unit) = {
   Runtime.getRuntime.addShutdownHook(new Thread(() => fn))
